@@ -1,0 +1,74 @@
+const { day1a, day1b } = require('./day1');
+const { day2a, day2b } = require('./day2');
+const { day3a, day3b } = require('./day3');
+const { day4a, day4b } = require('./day4');
+const { day5a, day5b } = require('./day5');
+const { day6a, day6b } = require('./day6');
+const { day7a, day7b } = require('./day7');
+const { day8a, day8b } = require('./day8');
+const { day9a, day9b } = require('./day9');
+const { day10a, day10b } = require('./day10');
+const { day11a, day11b } = require('./day11');
+const { day12a, day12b } = require('./day12');
+const { day13a, day13b } = require('./day13');
+const { day14a, day14b } = require('./day14');
+const { day15a, day15b } = require('./day15');
+const { day16a, day16b } = require('./day16');
+const { day17a, day17b } = require('./day17');
+const { day18a, day18b } = require('./day18');
+const { day19a, day19b } = require('./day19');
+const { day20a, day20b } = require('./day20');
+const { day21a, day21b } = require('./day21');
+const { day22a } = require('./day22');
+const { day22b } = require('./day22b');
+const { day23a, day23b } = require('./day23');
+const { day24a, day24b } = require('./day24');
+
+// day1a();
+// day1b();
+// day2a();
+// day2b();
+// day3a();
+// day3b();
+// day4a();
+// day4b();
+// day5a();
+// day5b();
+// day6a();
+// day6b();
+// day7a();
+// day7b();
+// day8a();
+// day8b();
+// day9a();
+// day9b();
+// day10a();
+// day10b();
+// day11a();
+// day11b();   // not solved
+// day12a();
+// day12b();
+// day13a();
+// day13b();
+// day14a();
+// day14b();
+// day15a();
+// day15b();
+// day16a();
+// day16b();    // not solved
+// day17a();
+// day17b();    // not solved
+// day18a();
+// day18b()
+// day19a();
+// day19b();
+// day20a();
+// day20b();
+// day21a();
+// day21b();
+// day22a();
+// day22b();   // not solved.
+// day23a();
+// day23b();
+day24a();
+day24b();
