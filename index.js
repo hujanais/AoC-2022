@@ -23,6 +23,7 @@ const { day22a } = require('./day22');
 const { day22b } = require('./day22b');
 const { day23a, day23b } = require('./day23');
 const { day24a, day24b } = require('./day24');
+const { day25a, day25b } = require('./day25');
 
 // day1a();
 // day1b();
@@ -70,5 +71,7 @@ const { day24a, day24b } = require('./day24');
 // day22b();   // not solved.
 // day23a();
 // day23b();
-day24a();
-day24b();
+// day24a();
+// day24b();
+day25a();
+day25b();
