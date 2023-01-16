@@ -10,3 +10,5 @@ some additional test cases for my code to debug.
 4.  Yes it takes me 10+ hours of coding on the upper level puzzles.
 5.  As always, I am humbled by the experience.  
 6.  Oh, I use vanilla JS on Replit.
+
+Current State: 45 / 49 points
