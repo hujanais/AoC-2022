@@ -1,43 +1,19 @@
 const fs = require('fs');
 
-class Node {
-  constructor(row, col, char, id) {
-    this.id = id;
-    this.r = row;
-    this.c = col;
+/*
+  This is not a generic solution. I had to stitch the face transitions specifically for this cube.
+*/
+
+class Cell {
+  constructor(r, c, face, char) {
+    this.r = r;
+    this.c = c;
+    this.face = face;
     this.char = char;
     this.up = null;
     this.down = null;
-    this.right = null;
     this.left = null;
-  }
-
-  stepLeft = () => {
-    if(this.id === 6) {
-      return this.up;
-    }
-    return this.left;
-  }
-
-  stepUp = () => {
-    if (this.id === 6) {
-      return this.right;
-    }
-    return this.up;
-  }
-
-  stepRight = () => {
-    if (this.id === 6) {
-      return this.down;
-    }
-    return this.right;
-  }
-
-  stepDown = () => {
-    if (this.id === 6) {
-      return this.left;
-    }
-    return this.down;
+    this.right = null;
   }
 }
 
@@ -65,229 +41,242 @@ const DOWN = 'D';
 
 const character = (direction) => {
   switch (direction) {
-    case LEFT: return '<';
-    case RIGHT: return '>';
-    case UP: return '^';
-    case DOWN: return 'v';
+    case LEFT:
+      return '<';
+    case RIGHT:
+      return '>';
+    case UP:
+      return '^';
+    case DOWN:
+      return 'v';
   }
-}
+};
 
-const mod = (x, m) => (x % m + m) % m;
+const day22b = () => {
+  // let [cell, grid, directionMap, instructions] = buildTestCube(); // 5031
+  let [cell, grid, directionMap, instructions] = buildCube(); // 109022 too high, 73238 wrong, 55364
+
+  // test to see if we can go around the cube N-S and S-W
+  // let dir;
+  // cell.char = 'S';
+  // [cell, dir] = step(cell, 200, UP, directionMap);
+  // cell.char = 'E';
+
+  // prettyPrint(grid);
+  // return;
+
+  // You begin the path in the leftmost open tile of the top row of tiles.
+  // Initially, you are facing to the right (from the perspective of how the map is drawn).
+  let direction = RIGHT;
+
+  cell.char = character(RIGHT);
+
+  let moveStr = '';
+  let stepsToTake = 0;
+  while (instructions.length > 0) {
+    const inst = instructions.shift();
+    // console.log(inst);
+    if ([LEFT, RIGHT, END].includes(inst)) {
+      // move
+      stepsToTake = +moveStr;
+      [cell, direction] = step(cell, stepsToTake, direction, directionMap);
+      if (inst === END) {
+        // exit end of instruction.
+        cell.char = 'E';
+        // prettyPrint(grid);
+        break;
+      }
+
+      // update direction
+      direction = changeDirection(direction, inst);
+      cell.char = character(direction);
+      // prettyPrint(grid);
+      moveStr = '';
+    } else {
+      moveStr += inst;
+    }
+  }
+
+  // The final password is the sum of 1000 times the row, 4 times the column, and the facing.
+  // Facing is 0 for right (>), 1 for down (v), 2 for left (<), and 3 for up (^).
+  let directionValue;
+  switch (direction) {
+    case RIGHT:
+      directionValue = 0;
+      break;
+    case DOWN:
+      directionValue = 1;
+      break;
+    case LEFT:
+      directionValue = 2;
+      break;
+    case UP:
+      directionValue = 3;
+      break;
+  }
+  const answer = 1000 * (cell.r + 1) + 4 * (cell.c + 1) + directionValue;
+  console.log('day22b = ', answer);
+};
+
+const step = (cell, steps, direction, directionMap) => {
+  if (steps === 0) {
+    return [cell, direction];
+  }
+
+  cell.char = character(direction);
+
+  let neighbor;
+  switch (direction) {
+    case LEFT:
+      neighbor = cell.left;
+      break;
+    case UP:
+      neighbor = cell.up;
+      break;
+    case RIGHT:
+      neighbor = cell.right;
+      break;
+    case DOWN:
+      neighbor = cell.down;
+      break;
+  }
+
+  if (neighbor.char === '#') {
+    return [cell, direction];
+  }
+
+  if (neighbor.face !== cell.face) {
+    let newDirection = directionMap.find((p) => p.from === cell.face && p.to === neighbor.face);
+    return step(neighbor, steps - 1, newDirection.newDir, directionMap);
+  } else {
+    return step(neighbor, steps - 1, direction, directionMap);
+  }
+};
 
 const changeDirection = (oldDirection, directionStr) => {
   let newDirection = '';
 
   switch (oldDirection) {
     case LEFT:
-      newDirection = (directionStr === LEFT) ? DOWN : UP;
+      newDirection = directionStr === LEFT ? DOWN : UP;
       break;
     case RIGHT:
-      newDirection = (directionStr === LEFT) ? UP : DOWN;
+      newDirection = directionStr === LEFT ? UP : DOWN;
       break;
     case UP:
-      newDirection = (directionStr === LEFT) ? LEFT : RIGHT;
+      newDirection = directionStr === LEFT ? LEFT : RIGHT;
       break;
     case DOWN:
-      newDirection = (directionStr === LEFT) ? RIGHT : LEFT;
+      newDirection = directionStr === LEFT ? RIGHT : LEFT;
       break;
   }
 
   return newDirection;
-}
+};
 
-const day22b = () => {
-  const [grid, instructions, sq1] = buildCubeGridSmall('./data/day22test.txt');
-  console.log(instructions);
-  
-  // You begin the path in the leftmost open tile of the top row of tiles. 
-  // Initially, you are facing to the right (from the perspective of how the map is drawn).
-  let ptr = sq1[0][0];
-  let direction = RIGHT;
-
-  grid[ptr.r][ptr.c] = '>';
-
-  let moveStr = '';
-  let stepsToTake = 0;
-  try {
-    while (instructions.length > 0) {
-      const inst = instructions.shift();
-      if ([LEFT, RIGHT, END].includes(inst)) {
-        // move
-        stepsToTake = +moveStr;
-        // console.log(direction, stepsToTake)
-        switch (direction) {
-          case LEFT:
-            while (stepsToTake > 0) {
-              if (ptr.left.char === '#') break;
-              grid[ptr.r][ptr.c] = '<';
-              ptr = ptr.stepLeft();
-              stepsToTake -= 1;
-            }
-            break;
-          case RIGHT:
-            while (stepsToTake > 0) {
-              if (ptr.right.char === '#') break;
-              grid[ptr.r][ptr.c] = '>';
-              ptr = ptr.stepRight();
-              stepsToTake -= 1;
-            }
-            break;
-          case UP:
-            while (stepsToTake > 0) {
-              if (ptr.up.char === '#') break;
-              grid[ptr.r][ptr.c] = '^';
-              ptr = ptr.stepUp();
-              stepsToTake -= 1;
-            }
-            break;
-          case DOWN:
-            while (stepsToTake > 0) {
-              if (ptr.down.char === '#') break;
-              grid[ptr.r][ptr.c] = 'v';
-              ptr = ptr.stepDown();
-              stepsToTake -= 1;
-            }
-            break;
-        }
-
-        if (inst === END) break;  // exit end of instruction.
-
-        // update direction
-        direction = changeDirection(direction, inst, [ptr.r, ptr.c], grid);
-        grid[ptr.r][ptr.c] = character(direction);
-        // console.log(pos, direction);
-        moveStr = '';
-      } else {
-        moveStr += inst;
-      }
-    }
-  } catch (ex) {
-    console.log(ptr.id, ex)
-  }
-
-  prettyPrint(grid)
-}
-
-const buildCubeGridSmall = () => {
-  let arr = fs.readFileSync('./data/day22test.txt',
-    { encoding: 'utf8', flag: 'r' }).split('\n');
+const buildCube = () => {
+  const filename = './data/day22.txt';
+  let arr = fs.readFileSync(filename, { encoding: 'utf8', flag: 'r' }).split('\n');
 
   // get the width of the board.
-  const width = Math.max(...arr.slice(0, -2).map(l => l.length));
+  const width = Math.max(...arr.slice(0, -2).map((l) => l.length));
   const grid = [];
 
-  // build the grid.
-  for (let line of arr.slice(0, -2)) {
-    line = line.padEnd(width, ' ');
-    grid.push([...line]);
+  const face1 = [];
+  const face2 = [];
+  const face3 = [];
+  const face4 = [];
+  const face5 = [];
+  const face6 = [];
+
+  for (let row = 0; row < arr.length - 2; row++) {
+    grid.push(Array.from(Array(width).keys()).map((col) => new Cell(row, col, 0, arr[row][col] ? arr[row][col] : '')));
+    // grid.push(Array.from(Array(width).keys()).map((col) => new Cell(row, col, 0, arr[row][col] ? '.' : '')));
   }
 
-  // generate the 6 50x50 grid and then unpack into a 4 x 4 50x50 grid.
-  /*
-          |1|
-      |2|3|4|
-          |5|6|
-  */
-  const sq1 = [];
-  const sq2 = [];
-  const sq3 = [];
-  const sq4 = [];
-  const sq5 = [];
-  const sq6 = [];
-
-  for (let r = 0; r < 4; r++) {
-    const newRow = [];
-    for (let c = 8; c < 12; c++) {
-      newRow.push(new Node(r, c, arr[r][c], 1));
+  // build the cube faces
+  for (let row = 0; row < 50; row++) {
+    face1.push([]);
+    face2.push([]);
+    for (let col = 0; col < 50; col++) {
+      grid[row][col + 50].face = 1;
+      grid[row][col + 100].face = 2;
+      face1[row].push(grid[row][col + 50]);
+      face2[row].push(grid[row][col + 100]);
     }
-    sq1.push(newRow);
   }
 
-  for (let r = 4; r < 8; r++) {
-    const newRow2 = [];
-    const newRow3 = [];
-    const newRow4 = [];
-    for (let c = 0; c < 4; c++) {
-      newRow2.push(new Node(r, c, arr[r][c], 2));
-      newRow3.push(new Node(r, c + 4, arr[r][c + 4], 3));
-      newRow4.push(new Node(r, c + 8, arr[r][c + 8], 4));
+  for (let row = 50; row < 100; row++) {
+    face3.push([]);
+    for (let col = 0; col < 50; col++) {
+      grid[row][col + 50].face = 3;
+      face3[row - 50].push(grid[row][col + 50]);
     }
-    sq2.push(newRow2);
-    sq3.push(newRow3);
-    sq4.push(newRow4);
   }
 
-  for (let r = 8; r < 12; r++) {
-    const newRow5 = [];
-    const newRow6 = [];
-    for (let c = 8; c < 12; c++) {
-      newRow5.push(new Node(r, c, arr[r][c], 5));
-      newRow6.push(new Node(r, c + 4, arr[r][c], 6));
+  for (let row = 100; row < 150; row++) {
+    face4.push([]);
+    face5.push([]);
+    for (let col = 0; col < 50; col++) {
+      grid[row][col].face = 4;
+      grid[row][col + 50].face = 5;
+
+      face4[row - 100].push(grid[row][col]);
+      face5[row - 100].push(grid[row][col + 50]);
     }
-    sq5.push(newRow5);
-    sq6.push(newRow6);
   }
 
-  // build the 4 x 4 blocks.
-  /*
-     |2v|
-  |3>|1^|6v|5v|
-     |4^|
-     |5^|
-  */
-
-  bfs(sq1);
-  bfs(sq2);
-  bfs(sq3);
-  bfs(sq4);
-  bfs(sq5);
-  bfs(sq6);
-
-  // stitch 1 vertical
-  const len = sq1[0].length;
-  for (let c = 0; c < len; c++) {
-    sq1[0][c].up = sq2[0][len - c - 1];
-    sq2[0][len - c - 1].up = sq1[0][c];
-
-    sq1[len - 1][c].down = sq4[0][c];
-    sq4[0][c].up = sq1[len - 1][c];
-
-    sq5[0][c].up = sq4[len - 1][c];
-    sq4[len - 1][c].down = sq5[0][c];
-
-    sq5[len - 1][c].down = sq2[len - 1][len - c - 1];
-    sq2[len - 1][len - c - 1].down = sq5[len - 1][c];
+  for (let row = 150; row < 200; row++) {
+    face6.push([]);
+    for (let col = 0; col < 50; col++) {
+      grid[row][col].face = 6;
+      face6[row - 150].push(grid[row][col]);
+    }
   }
 
-  // stitch 1 horizontal
-  for (let r = 0; r < len; r++) {
-    sq1[r][0].left = sq3[0][r];
-    sq3[0][r].up = sq1[r][0];
+  // build link-list
+  buildLinks(face1);
+  buildLinks(face2);
+  buildLinks(face3);
+  buildLinks(face4);
+  buildLinks(face5);
+  buildLinks(face6);
 
-    sq1[r][len - 1].right = sq6[len - r - 1][len - 1];
-    sq6[len - r - 1][len - 1].right = sq1[r][len - 1];
+  // link the faces
+  linkFaces(grid, face1, face4, LEFT, face6, LEFT, face2, LEFT, face3, UP);
+  linkFaces(grid, face2, face1, RIGHT, face6, DOWN, face5, RIGHT, face3, RIGHT);
+  linkFaces(grid, face3, face4, UP, face1, DOWN, face2, DOWN, face5, UP);
+  linkFaces(grid, face4, face1, LEFT, face3, LEFT, face5, LEFT, face6, UP);
+  linkFaces(grid, face5, face4, RIGHT, face3, DOWN, face2, RIGHT, face6, RIGHT);
+  linkFaces(grid, face6, face1, UP, face4, DOWN, face5, DOWN, face2, UP);
 
-    sq6[r][0].left = sq5[r][len - 1];
-    sq5[r][len - 1].right = sq6[r][0];
-
-    sq5[r][0].left = sq3[len - 1][len - 1 - r];
-    sq3[len - 1][len - 1 - r].down = sq5[r][0];
-  }
-
-  // stitch 4 horizontal
-  for (let r = 0; r < len; r++) {
-    sq4[r][len - 1].right = sq6[0][len - 1 - r];
-    sq6[0][len - 1 - r].up = sq4[r][len - 1];
-
-    sq6[len - 1][len - 1 - r].down = sq2[r][0];
-    sq2[r][0].left = sq6[len - 1][len - 1 - r];
-
-    sq2[r][len - 1].right = sq3[r][0];
-    sq3[r][0].left = sq2[r][len - 1];
-
-    sq3[r][len - 1].right = sq4[r][0];
-    sq4[r][0].left = sq3[r][len - 1];
-  }
+  // generate direction map.
+  const directionMap = [
+    { from: 1, to: 4, direction: LEFT, newDir: RIGHT },
+    { from: 1, to: 6, direction: UP, newDir: RIGHT },
+    { from: 1, to: 2, direction: RIGHT, newDir: RIGHT },
+    { from: 1, to: 3, direction: DOWN, newDir: DOWN },
+    { from: 2, to: 1, direction: LEFT, newDir: LEFT },
+    { from: 2, to: 6, direction: UP, newDir: UP },
+    { from: 2, to: 5, direction: RIGHT, newDir: LEFT },
+    { from: 2, to: 3, direction: DOWN, newDir: LEFT },
+    { from: 3, to: 4, direction: LEFT, newDir: DOWN },
+    { from: 3, to: 1, direction: UP, newDir: UP },
+    { from: 3, to: 2, direction: RIGHT, newDir: UP },
+    { from: 3, to: 5, direction: DOWN, newDir: DOWN },
+    { from: 4, to: 1, direction: LEFT, newDir: RIGHT },
+    { from: 4, to: 3, direction: UP, newDir: RIGHT },
+    { from: 4, to: 5, direction: RIGHT, newDir: RIGHT },
+    { from: 4, to: 6, direction: DOWN, newDir: DOWN },
+    { from: 5, to: 4, direction: LEFT, newDir: LEFT },
+    { from: 5, to: 3, direction: UP, newDir: UP },
+    { from: 5, to: 2, direction: RIGHT, newDir: LEFT },
+    { from: 5, to: 6, direction: DOWN, newDir: LEFT },
+    { from: 6, to: 1, direction: LEFT, newDir: DOWN },
+    { from: 6, to: 4, direction: UP, newDir: UP },
+    { from: 6, to: 5, direction: RIGHT, newDir: UP },
+    { from: 6, to: 2, direction: DOWN, newDir: DOWN },
+  ];
 
   // extract the move instructions.
   const instructions = Array.from(arr.slice(-1)[0]);
@@ -295,48 +284,144 @@ const buildCubeGridSmall = () => {
   // add an END cap.
   instructions.push(END);
 
-  return [grid, instructions, sq1];
-}
+  return [face1[0][0], grid, directionMap, instructions];
+};
 
-const key = (r, c) => `${r}-${c}`;
+const linkFaces = (grid, face, leftFace, leftFaceDirection, upFace, upFaceDirection, rightFace, rightFaceDirection, downFace, downFaceDirection) => {
+  const len = face.length;
+  switch (leftFaceDirection) {
+    case UP:
+      for (let row = 0; row < len; row++) {
+        face[row][0].left = leftFace[0][row];
+        leftFace[0][row].up = face[row][0];
+      }
+      break;
+    case DOWN:
+      for (let row = 0; row < len; row++) {
+        face[row][0].left = leftFace[len - 1][len - 1 - row];
+        leftFace[len - 1][len - 1 - row].down = face[row][0];
+      }
+      break;
+    case RIGHT:
+      for (let row = 0; row < len; row++) {
+        face[row][0].left = leftFace[row][len - 1];
+        leftFace[row][len - 1].right = face[row][0];
+      }
+      break;
+    case LEFT:
+      for (let row = 0; row < len; row++) {
+        face[row][0].left = leftFace[len - 1 - row][0];
+        leftFace[len - 1 - row][0].left = face[row][0];
+      }
+      break;
+  }
 
-const bfs = (square) => {
-  const queue = [[0, 0]];
-  const visited = new Set();
-  while (queue.length > 0) {
-    const [r, c] = queue.shift();
-    visited.add(key(r, c));
-    if (c - 1 >= 0 && !visited.has(key(r, c - 1))) {
-      // left
-      square[r][c].left = square[r][c - 1];
-      square[r][c - 1].right = square[r][c];
-      queue.push([r, c - 1]);
-    }
-    if (c + 1 < square[0].length && !visited.has(key(r, c + 1))) {
-      // right
-      square[r][c].right = square[r][c + 1];
-      square[r][c + 1].left = square[r][c];
-      queue.push([r, c + 1]);
-    }
-    if (r - 1 >= 0 && !visited.has(key(r - 1, c))) {
-      // up
-      square[r][c].up = square[r - 1][c];
-      square[r - 1][c].down = square[r][c];
-      queue.push([r - 1, c]);
-    }
-    if (r + 1 < square.length && !visited.has(key(r + 1, c))) {
-      // down
-      square[r][c].down = square[r + 1][c];
-      square[r + 1][c].up = square[r][c];
-      queue.push([r + 1, c]);
+  switch (upFaceDirection) {
+    case UP:
+      for (let col = 0; col < len; col++) {
+        face[0][col].up = upFace[0][col];
+        upFace[0][col].up = face[0][col];
+      }
+      break;
+    case DOWN:
+      for (let col = 0; col < len; col++) {
+        face[0][col].up = upFace[len - 1][col];
+        upFace[len - 1][col].down = face[0][col];
+      }
+      break;
+    case RIGHT:
+      for (let col = 0; col < len; col++) {
+        face[0][col].up = upFace[len - 1 - col][len - 1];
+        upFace[len - 1 - col][len - 1].right = face[0][col];
+      }
+      break;
+    case LEFT:
+      for (let col = 0; col < len; col++) {
+        face[0][col].up = upFace[col][0];
+        upFace[col][0].left = face[0][col];
+      }
+      break;
+  }
+
+  switch (rightFaceDirection) {
+    case UP:
+      for (let row = 0; row < len; row++) {
+        face[row][len - 1].right = rightFace[row][0];
+        rightFace[row][0].left = face[row][len - 1];
+      }
+      break;
+    case DOWN:
+      for (let row = 0; row < len; row++) {
+        face[row][len - 1].right = rightFace[len - 1][row];
+        rightFace[len - 1][row].bottom = face[row][len - 1];
+      }
+      break;
+    case RIGHT:
+      for (let row = 0; row < len; row++) {
+        face[row][len - 1].right = rightFace[len - 1 - row][len - 1];
+        rightFace[len - 1 - row][len - 1].right = face[row][len - 1];
+      }
+      break;
+    case LEFT:
+      for (let row = 0; row < len; row++) {
+        face[row][len - 1].right = rightFace[row][0];
+        rightFace[row][0].left = face[row][len - 1];
+      }
+      break;
+  }
+
+  switch (downFaceDirection) {
+    case UP:
+      for (let col = 0; col < len; col++) {
+        face[len - 1][col].down = downFace[0][col];
+        downFace[0][col].up = face[len - 1][col];
+      }
+      break;
+    case DOWN:
+      for (let col = 0; col < len; col++) {
+        face[len - 1][col].down = downFace[len - 1][len - 1 - col];
+        downFace[len - 1][len - 1 - col].down = face[len - 1][col];
+      }
+      break;
+    case RIGHT:
+      for (let col = 0; col < len; col++) {
+        face[len - 1][col].down = downFace[col][len - 1];
+        downFace[col][len - 1].right = face[len - 1][col];
+      }
+      break;
+    case LEFT:
+      for (let col = 0; col < len; col++) {
+        face[len - 1][col].down = downFace[len - 1 - col][0];
+        downFace[len - 1 - col][0].left = face[len - 1][col];
+      }
+      break;
+  }
+};
+
+const buildLinks = (grid) => {
+  for (let row = 0; row < grid.length; row++) {
+    for (let col = 0; col < grid.length; col++) {
+      if (row - 1 >= 0) {
+        grid[row][col].up = grid[row - 1][col];
+      }
+      if (row + 1 < grid.length) {
+        grid[row][col].down = grid[row + 1][col];
+      }
+      if (col - 1 >= 0) {
+        grid[row][col].left = grid[row][col - 1];
+      }
+      if (col + 1 < grid[0].length) {
+        grid[row][col].right = grid[row][col + 1];
+      }
     }
   }
-}
+};
 
 prettyPrint = (grid) => {
-  grid.forEach(row => {
-    console.log(row.join(''));
-  });
-}
+  for (let row of grid) {
+    console.log(row.map((c) => c.char).join(''));
+  }
+  console.log('');
+};
 
 module.exports = { day22b };

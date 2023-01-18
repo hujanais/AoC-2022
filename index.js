@@ -68,10 +68,10 @@ const { day25a, day25b } = require('./day25');
 // day21a();
 // day21b();
 // day22a();
-// day22b();   // not solved.
+day22b();   // not solved.
 // day23a();
 // day23b();
 // day24a();
 // day24b();
-day25a();
-day25b();
+// day25a();
+// day25b();
